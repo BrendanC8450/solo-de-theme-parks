@@ -2,8 +2,11 @@ import pytest
 from db.seed import seed
 from db.connection import create_conn, close_db
 from db.data.index import index as data
+from db.utils.format_rides import utils_park_names_to_id, prepare_rides_data
 
-# Do not change these tests
+
+# https://l2c.northcoders.com/courses/de-notes/de2-fundamentals-testing#sectionId=,step=
+# https://docs.python.org/3/library/unittest.mock.html
 
 
 @pytest.fixture(scope="session")
@@ -16,98 +19,68 @@ def db():
     yield test_db
     close_db(test_db)
 
+def test_parks_query_is_a_list_of_lists(db):
+    # Assign
+    base_query = "SELECT * FROM parks"
+    
+    # Act
+    expected = db.run(base_query)
+
+    # Act 
+    assert isinstance(expected, list)
+    assert isinstance(expected[0], list)
+    assert isinstance(expected[1], list)
+    assert [1, 'Thorpe Park', 1979, 1700000] in expected
+    assert [2, 'Alton Towers', 1980, 2520000] in expected
 
 
+def test_utils_func_returns_a_dict():
+    test_output = utils_park_names_to_id()
 
+    assert isinstance(test_output, dict)
 
-# Rides table tests
-def test_rides_table_exists(db):
-    '''Tests if rides table exists'''
-    base_query = "SELECT EXISTS (SELECT FROM information_schema.tables \
-                  WHERE table_name = 'rides');"
-    expect = db.run(base_query)
-    assert expect == [[True]]
+def test_columns_of_db_query_are_for_parks_data(db):
 
+    db.run("SELECT * FROM parks")
 
-def test_rides_table_has_ride_id_column_as_serial_primary_key(db):
-    '''Tests if rides table has ride id as serial primary key'''
-    base_query = "SELECT column_name, data_type, column_default \
-                  FROM information_schema.columns \
-                  WHERE table_name = 'rides' \
-                  AND column_name = 'ride_id';"
-    expect = db.run(base_query)
-    assert expect[0][0] == "ride_id"
-    assert expect[0][1] == "integer"
-    assert expect[0][2] == "nextval('rides_ride_id_seq'::regclass)"
+    assert 'park_id' == db.columns[0]['name']
+    assert 'park_name' == db.columns[1]['name']
+    assert 'year_opened' == db.columns[2]['name']
+    assert 'annual_attendance' == db.columns[3]['name']
 
+def test_rows_output_data_from_parks_table(db):
+    db_query = db.run("SELECT * FROM parks")
 
-def test_rides_table_has_ride_name_column(db):
-    '''Tests if rides table has ride name column'''
-    base_query = "SELECT column_name, data_type, column_default \
-                  FROM information_schema.columns \
-                  WHERE table_name = 'rides' \
-                  AND column_name = 'ride_name';"
-    expect = db.run(base_query)
-    assert expect == [["ride_name", "character varying", None]]
+    row_1 = db_query[0]
+    row_2 = db_query[1]
+    row_3 = db_query[2]
+    row_4 = db_query[3]
 
+    assert row_1 == [1, 'Thorpe Park', 1979, 1700000]
+    assert row_2 == [2, 'Alton Towers', 1980, 2520000]
+    assert row_3 == [3, 'Chessington World of Adventures', 1987, 1400000]
+    assert row_4 == [4, 'Tivoli Gardens', 1843, 3972000]
 
-def test_rides_table_has_ride_id_column(db):
-    '''Tests if rides table has ride id column'''
-    base_query = "SELECT column_name \
-                  FROM information_schema.columns \
-                  WHERE table_name = 'rides' \
-                  AND column_name = 'ride_id';"
-    expect = db.run(base_query)
-    assert expect == [["ride_id"]]
+def test_park_ids_and_names_are_collected_from_db(db):
+    db_query_ids = db.run("SELECT park_id FROM parks;")
+    db_query_names = db.run("SELECT park_name FROM parks;")
 
+    assert db_query_ids[0][0] == 1
+    assert db_query_ids[1][0] == 2
+    assert db_query_ids[2][0] == 3
+    assert db_query_ids[3][0] == 4
+    assert db_query_names[0][0] == 'Thorpe Park'
+    assert db_query_names[1][0] == 'Alton Towers'
+    assert db_query_names[2][0] == 'Chessington World of Adventures'
+    assert db_query_names[3][0] == 'Tivoli Gardens'
 
-def test_rides_table_has_year_opened_column(db):
-    '''Tests if rides table has year opened column'''
-    base_query = "SELECT column_name \
-                  FROM information_schema.columns \
-                  WHERE table_name = 'rides' \
-                  AND column_name = 'year_opened';"
-    expect = db.run(base_query)
-    assert expect == [["year_opened"]]
+def test_utils_func_maps_park_names_to_ids(db):
+    db_query_ids = db.run("SELECT park_id FROM parks;")
+    db_query_names = db.run("SELECT park_name FROM parks;")
 
+    utils_func = utils_park_names_to_id()
 
-def test_rides_table_has_votes_column(db):
-    '''Tests if rides table has votes column'''
-    base_query = "SELECT column_name \
-                  FROM information_schema.columns \
-                  WHERE table_name = 'rides' \
-                  AND column_name = 'votes';"
-    expect = db.run(base_query)
-    assert expect == [["votes"]]
-
-
-# Data insertion
-def test_parks_data_has_been_inserted_correctly(db):
-    '''Tests if parks data has been inserted correctly'''
-    base_query = "SELECT * FROM parks;"
-    parks = db.run(base_query)
-
-    assert len(parks) == 4
-
-    for park in parks:
-        park_id, park_name, year_opened, annual_attendance = park
-        assert isinstance(park_id, int)
-        assert isinstance(park_name, str)
-        assert isinstance(year_opened, int)
-        assert isinstance(annual_attendance, int)
-
-
-def test_rides_data_has_been_inserted_correctly(db):
-    '''Tests if rides data has been inserted correctly'''
-    base_query = "SELECT * FROM rides;"
-    rides = db.run(base_query)
-
-    assert len(rides) == 20
-
-    for ride in rides:
-        ride_id, park_id, ride_name, year_opened, votes = ride
-        assert isinstance(ride_id, int)
-        assert isinstance(park_id, int)
-        assert isinstance(ride_name, str)
-        assert isinstance(year_opened, int)
-        assert isinstance(votes, int)
+    assert utils_func[db_query_names[0][0]] == db_query_ids[0][0]
+    assert utils_func[db_query_names[1][0]] == db_query_ids[1][0]
+    assert utils_func[db_query_names[2][0]] == db_query_ids[2][0]
+    assert utils_func[db_query_names[3][0]] == db_query_ids[3][0]

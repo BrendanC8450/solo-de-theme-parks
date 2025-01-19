@@ -1,11 +1,9 @@
 # You will need to write your database connection file before being able to run your seed file
 
-from pprint import pprint
-from db.connection import db, create_conn
+from db.connection import db
 from db.data.parks import parks
 from db.data.rides import rides
-from db.utils.format_rides import utils_park_names_to_id
-from db.utils.format_rides import get_parks_data, utils_park_names_to_id, prepare_rides_data
+from db.utils.format_rides import prepare_rides_data
 
 
 def seed(db, parks, rides, stalls, foods):
@@ -47,7 +45,6 @@ def create_rides():
             votes INTEGER NOT NULL
         )
     """)
-
 
 
 def populate_table(table_name, table_data ):

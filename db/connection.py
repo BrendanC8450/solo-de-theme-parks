@@ -22,8 +22,7 @@ db = create_conn()
 # Create a close_db function that closes a passed database connection object
 
 def close_db(db):
-    db.close()
-    output = print(f"Status: Closed connection to database")
-    return 0
+   return db.close()
+
 
 

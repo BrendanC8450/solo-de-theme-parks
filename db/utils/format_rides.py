@@ -5,38 +5,28 @@ from pprint import pprint
 from db.data.rides import rides 
 
 
-def get_parks_data():
-    db_run_query = db.run("SELECT * FROM parks;")
+def utils_park_names_to_id():
+    db_run_query = db.run("SELECT * FROM parks")
 
-    # Column titles -> park_id, park_name, year_opened, annual_attendance 
+    map_dict_park_name_to_id = {}
+   
+    # Park columns and rows
     column_titles = [db.columns[idx]['name'] for idx in range(len(db.columns))]
+    rows = [db_run_query[idx] for idx in range(len(db_run_query))]
 
-    # Rows -> 
-    rows = [db_run_query[idx] for idx in range(len(db_run_query))]#
 
     parks_data = [dict(zip(column_titles, row)) for row in rows]
 
-    return parks_data
-
-
-
-def utils_park_names_to_id():
-    parks_data = get_parks_data()
-
-    # [1, 2, 3, 4]
     park_ids = [park['park_id'] for park in parks_data]
-
-    # ['Thorpe Park', 'Alton Towers', 'Chessington World of Adventures', 'Tivoli Gardens']
     park_names = [park['park_name'] for park in parks_data]
 
-    map_dict_park_name_to_id = {}
-
+    # Map to dictionary
     for idx in range(len(parks_data)):
-        park_name = park_names[idx] 
-        park_id = park_ids[idx]
-        map_dict_park_name_to_id[park_name] = park_id 
+        map_dict_park_name_to_id[park_names[idx]] = park_ids[idx] 
 
     return map_dict_park_name_to_id
+
+# print(utils_park_names_to_id())
 
 
 def prepare_rides_data():
@@ -51,7 +41,7 @@ def prepare_rides_data():
                     rides[idx]['park_id'] = utils_name_to_id[park_name]
                     del ride['park_name']
             except KeyError as err:
-                print("File already has park_id")
+                print("File already has an id")
                 break
         
         
